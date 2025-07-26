@@ -1,0 +1,74 @@
+name: Tasmota Master
+version: "1.0.0"
+slug: tasmota_master
+description: Complete Tasmota device management suite with web-based flashing, AI recommendations, and community firmware
+url: https://github.com/techposts/tasmota-master
+advanced: false
+stage: stable
+timeout: 30
+audio: false
+video: false
+gpio: false
+kernelModules: false
+legacySupport: false
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:devices
+panel_title: Tasmota Master
+hassio_api: true
+hassio_role: default
+homeassistant_api: true
+host_network: false
+host_dbus: false
+privileged:
+  - NET_ADMIN
+devices:
+  - /dev/ttyUSB0
+  - /dev/ttyUSB1
+  - /dev/ttyACM0
+  - /dev/ttyACM1
+udev: true
+options:
+  mqtt_host: core-mosquitto
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
+  discovery_prefix: homeassistant
+  device_scan_interval: 30
+  auto_backup: true
+  log_level: info
+  github_token: ""
+  enable_analytics: true
+  max_cache_size_gb: 5
+  community_features: true
+schema:
+  mqtt_host: str
+  mqtt_port: port
+  mqtt_username: str?
+  mqtt_password: password?
+  discovery_prefix: str
+  device_scan_interval: int(10,300)
+  auto_backup: bool
+  log_level: list(debug|info|warning|error)
+  github_token: password?
+  enable_analytics: bool
+  max_cache_size_gb: int(1,10)
+  community_features: bool
+image: ghcr.io/techposts/tasmota-master:{arch}-1.0.0
+webui: "[PROTO:ssl]://[HOST]:[PORT:8099]"
+watchdog: "http://[HOST]:[PORT:8099]/api/health"
+backup: hot
+backup_exclude:
+  - "rootfs/app/frontend/node_modules/**"
+  - "rootfs/app/backend/__pycache__/**"
+  - "*.log"
+  - "tmp/**"

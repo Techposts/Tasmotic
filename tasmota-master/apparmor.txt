@@ -1,0 +1,107 @@
+#include <tunables/global>
+
+profile tasmota_master flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # Capabilities
+  file,
+  signal (send) set=(kill,term,int,hup,cont),
+
+  # Bashio access
+  /usr/lib/bashio/** ix,
+  /tmp/** rwk,
+
+  # Access to options.json and other files within your addon
+  /data/** rw,
+
+  # Access to mapped volumes specified in config.json
+  /share/** rw,
+  /ssl/** r,
+  /addons/** r,
+  /backup/** rw,
+  /media/** rw,
+
+  # System access for device management
+  /dev/ttyUSB* rw,
+  /dev/ttyACM* rw,
+  /dev/mem r,
+  /sys/class/gpio/** rw,
+  /sys/bus/usb/** r,
+
+  # Network access for device discovery
+  /proc/net/** r,
+  /etc/hosts r,
+  /etc/resolv.conf r,
+
+  # Python and application access
+  /opt/app/** rw,
+  /opt/app/backend/** rwix,
+  /opt/app/frontend/build/** r,
+  
+  # Start new profile for Python Flask application
+  /usr/bin/python3 cx -> flask_app,
+
+  # Start nginx
+  /usr/sbin/nginx cx -> nginx_server,
+
+  profile flask_app flags=(attach_disconnected,mediate_deleted) {
+    #include <abstractions/base>
+    #include <abstractions/python>
+
+    # Receive signals from parent
+    signal (receive) peer=*_tasmota_master,
+
+    # Application files
+    /opt/app/backend/** rw,
+    /opt/app/data/** rw,
+    /opt/app/logs/** rw,
+    /opt/app/config/** rw,
+
+    # Data directory access
+    /data/** rw,
+
+    # Network and system access
+    /proc/net/** r,
+    /etc/hosts r,
+    /etc/resolv.conf r,
+    
+    # Device access for flashing
+    /dev/ttyUSB* rw,
+    /dev/ttyACM* rw,
+    
+    # Python interpreter and libraries
+    /usr/bin/python3 mr,
+    /usr/lib/python3*/** mr,
+    /usr/local/lib/python3*/** mr,
+    
+    # Temporary files
+    /tmp/** rwk,
+    /var/tmp/** rwk,
+  }
+
+  profile nginx_server flags=(attach_disconnected,mediate_deleted) {
+    #include <abstractions/base>
+    #include <abstractions/web-data>
+
+    # Receive signals from parent
+    signal (receive) peer=*_tasmota_master,
+
+    # Nginx binary and config
+    /usr/sbin/nginx mr,
+    /etc/nginx/** r,
+    /var/log/nginx/** w,
+    /var/lib/nginx/** rw,
+    /run/nginx.pid rw,
+
+    # Frontend static files
+    /opt/app/frontend/build/** r,
+
+    # Network access
+    network inet stream,
+    network inet6 stream,
+    
+    # Temporary files
+    /tmp/** rwk,
+    /var/cache/nginx/** rw,
+  }
+}
